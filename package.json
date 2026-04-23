@@ -1,0 +1,18 @@
+{
+  "name": "podcast-note",
+  "private": true,
+  "packageManager": "pnpm@10.32.1",
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev --parallel",
+    "dev:web": "pnpm --filter web dev",
+    "dev:api": "pnpm --filter api dev",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "storybook": "turbo run storybook --parallel",
+    "build-storybook": "turbo run build-storybook"
+  },
+  "devDependencies": {
+    "turbo": "^2.5.8"
+  }
+}

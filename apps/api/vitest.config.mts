@@ -1,0 +1,22 @@
+import { defineWorkersConfig } from "@cloudflare/vitest-pool-workers/config";
+
+export default defineWorkersConfig({
+	test: {
+		deps: {
+			optimizer: {
+				ssr: {
+					include: [
+						"@langchain/core",
+						"@langchain/langgraph",
+						"@langchain/openai",
+					],
+				},
+			},
+		},
+		poolOptions: {
+			workers: {
+				wrangler: { configPath: "./wrangler.jsonc" },
+			},
+		},
+	},
+});

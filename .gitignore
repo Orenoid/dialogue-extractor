@@ -1,0 +1,13 @@
+node_modules
+.DS_Store
+.turbo
+
+apps/web/.next
+apps/web/storybook-static
+apps/web/coverage
+
+apps/api/.wrangler
+apps/api/dist
+apps/api/coverage
+
+.env
