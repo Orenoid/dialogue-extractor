@@ -24,9 +24,9 @@ describe("streamSectionDialogue", () => {
 					],
 				},
 			],
-			dialogue_turn: [
-				{ speakerId: "speaker-host", text: "这波 AI 公司增长速度真的很快吗？" },
-				{ speakerId: "speaker-guest", text: "是的，它们的收入增长速度几乎是前所未有的。" },
+			streams: [
+				["这波 AI 公司", "增长速度真的很快吗？"],
+				["是的，它们的收入增长速度", "几乎是前所未有的。"],
 			],
 		});
 
@@ -45,18 +45,18 @@ describe("streamSectionDialogue", () => {
 			"subsection.started",
 			"turn.started",
 			"turn.delta",
+			"turn.delta",
 			"turn.completed",
 			"turn.started",
+			"turn.delta",
 			"turn.delta",
 			"turn.completed",
 			"subsection.completed",
 			"section.completed",
 		]);
-		expect(events).toContainEqual({
-			type: "turn.delta",
-			turnId: "section-0-subsection-1-turn-1",
-			delta: "这波 AI 公司增长速度真的很快吗？",
-		});
+		expect(collectTurnText(events, "section-0-subsection-1-turn-1")).toBe(
+			"这波 AI 公司增长速度真的很快吗？",
+		);
 	});
 
 	it("rejects unknown speakers in the section plan", async () => {
@@ -103,7 +103,7 @@ describe("streamSectionDialogue", () => {
 					],
 				},
 			],
-			dialogue_turn: [{ speakerId: "speaker-host", text: "Jen" }],
+			streams: [["Jen"]],
 		});
 
 		await expect(
@@ -117,13 +117,26 @@ describe("streamSectionDialogue", () => {
 	});
 });
 
-function createStructuredModel(outputs: Record<string, unknown[]>): DialogueModel {
+function createStructuredModel(
+	outputs: Record<string, unknown[]>,
+): DialogueModel {
 	return {
 		async invoke() {
 			return "";
 		},
 		async *stream() {
-			yield "";
+			const queue = outputs.streams ?? [];
+			const output = queue.shift();
+			if (!output) {
+				throw new Error("No stream output queued.");
+			}
+			if (Array.isArray(output)) {
+				for (const chunk of output) {
+					yield chunk;
+				}
+				return;
+			}
+			yield output;
 		},
 		withStructuredOutput(_schema: unknown, config?: { name?: string }) {
 			const name = config?.name ?? "default";
@@ -139,4 +152,11 @@ function createStructuredModel(outputs: Record<string, unknown[]>): DialogueMode
 			};
 		},
 	};
+}
+
+function collectTurnText(events: GraphEvent[], turnId: string): string {
+	return events
+		.filter((event) => event.type === "turn.delta" && event.turnId === turnId)
+		.map((event) => event.delta)
+		.join("");
 }

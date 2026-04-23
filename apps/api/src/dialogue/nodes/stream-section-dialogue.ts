@@ -6,6 +6,7 @@ import type {
 	GraphEvent,
 	TranscriptChunk,
 } from "../types";
+import { modelOutputToText } from "./model-utils";
 
 type ValidationErrorCode =
 	| "structured_output_unavailable"
@@ -49,13 +50,8 @@ const SectionPlanSchema = z.object({
 		.max(4),
 });
 
-const TurnSchema = z.object({
-	speakerId: z.string().min(1),
-	text: z.string().min(1),
-});
-
 type SectionPlan = z.infer<typeof SectionPlanSchema>;
-type TurnOutput = z.infer<typeof TurnSchema>;
+type TurnOutput = { speakerId: string; text: string };
 
 interface StructuredModel<T extends Record<string, unknown>> {
 	invoke(input: string): Promise<T>;
@@ -115,26 +111,32 @@ export async function streamSectionDialogue(params: {
 		const completedTurns: Array<{ speakerId: string; text: string }> = [];
 		for (const [turnIndex, plannedTurn] of subsection.turns.entries()) {
 			const turnId = `${subsectionId}-turn-${turnIndex + 1}`;
-			const turn = await generateTurn(model, {
-				...params,
-				sectionHeading: plan.heading,
-				subsectionHeading: subsection.heading,
-				plannedTurn,
-				completedTurns,
-			});
-			validateTurn(turn, speakerIds);
-
 			params.emit({
 				type: "turn.started",
 				turnId,
 				subsectionId,
-				speakerId: turn.speakerId,
+				speakerId: plannedTurn.speakerId,
 			});
-			params.emit({
-				type: "turn.delta",
-				turnId,
-				delta: turn.text.trim(),
-			});
+			const text = await streamTurnText(
+				model,
+				{
+					...params,
+					sectionHeading: plan.heading,
+					subsectionHeading: subsection.heading,
+					plannedTurn,
+					completedTurns,
+				},
+				(delta) => {
+					params.emit({
+						type: "turn.delta",
+						turnId,
+						delta,
+					});
+				},
+			);
+			const turn = { speakerId: plannedTurn.speakerId, text };
+			validateTurn(turn, speakerIds);
+
 			params.emit({ type: "turn.completed", turnId });
 			completedTurns.push({ speakerId: turn.speakerId, text: turn.text.trim() });
 		}
@@ -165,8 +167,8 @@ async function generateSectionPlan(
 	return SectionPlanSchema.parse(raw);
 }
 
-async function generateTurn(
-	model: RequiredStructuredOutputModel,
+async function streamTurnText(
+	model: DialogueModel,
 	params: {
 		chunk: TranscriptChunk;
 		speakers: DialogueSpeaker[];
@@ -175,14 +177,22 @@ async function generateTurn(
 		plannedTurn: { speakerId: string; intent: string };
 		completedTurns: Array<{ speakerId: string; text: string }>;
 	},
-): Promise<TurnOutput> {
-	const structured = model.withStructuredOutput<TurnOutput>(TurnSchema, {
-		name: "dialogue_turn",
-		method: "jsonSchema",
-		strict: true,
-	});
-	const raw = await structured.invoke(buildTurnPrompt(params));
-	return TurnSchema.parse(raw);
+	emitDelta: (delta: string) => void,
+): Promise<string> {
+	const stream = await model.stream(buildTurnPrompt(params));
+	let text = "";
+
+	for await (const chunk of stream) {
+		const delta = modelOutputToText(chunk);
+		if (!delta) {
+			continue;
+		}
+
+		text += delta;
+		emitDelta(delta);
+	}
+
+	return text.trim();
 }
 
 function validateSectionPlan(plan: SectionPlan, speakerIds: Set<string>): void {
@@ -297,7 +307,7 @@ function buildTurnPrompt(params: {
 					.join("\n")
 			: "(none)";
 
-	return `你是中文科技访谈编辑。请根据 section plan 生成当前这一轮中文对话。
+	return `你是中文科技访谈编辑。请根据 section plan 生成当前这一轮中文对话文本。
 
 Allowed speaker IDs:
 ${params.speakers.map((speaker) => `- ${speaker.id}: ${speaker.name}`).join("\n")}
@@ -312,9 +322,8 @@ Previous turns in this subsection:
 ${previousTurns}
 
 Rules:
-- Return exactly one turn object.
-- speakerId should normally equal the planned speakerId.
-- text must be fluent Chinese dialogue content, not a speaker label.
+- Only output the fluent Chinese dialogue text for this single turn.
+- Do not output JSON, markdown, explanations, or a speaker label.
 - Do not include speaker names such as "Jen:" or "Mark:" in text.
 - Preserve the source meaning and do not invent facts.
 - Make this turn coherent with previous turns and concise enough for a readable article.
