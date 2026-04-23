@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, MouseEvent, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import type { SubmitDialogueInput } from "@/types/dialogue";
@@ -9,66 +9,62 @@ interface SourceFormProps {
   isLoading: boolean;
   onSubmit: (input: SubmitDialogueInput) => Promise<void>;
   onStop: () => void;
-  onReset: () => void;
 }
 
-export function SourceForm({
-  isLoading,
-  onSubmit,
-  onStop,
-  onReset,
-}: SourceFormProps) {
-  const [url, setUrl] = useState(
-    "https://www.youtube.com/watch?v=xRh2sVcNXQ8",
-  );
+export function SourceForm({ isLoading, onSubmit, onStop }: SourceFormProps) {
+  const [url, setUrl] = useState("");
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    await onSubmit({ source: { kind: "youtube", url }, targetLanguage: "zh-CN" });
+    const trimmedUrl = url.trim();
+
+    if (!trimmedUrl || isLoading) {
+      return;
+    }
+
+    await onSubmit({
+      source: { kind: "youtube", url: trimmedUrl },
+      targetLanguage: "zh-CN",
+    });
+  }
+
+  function handleStop(event: MouseEvent<HTMLButtonElement>) {
+    event.preventDefault();
+    onStop();
   }
 
   return (
     <form
       onSubmit={handleSubmit}
-      className="rounded-[1.75rem] border border-stone-200 bg-[#fffaf0]/90 p-5 shadow-[0_24px_80px_rgba(69,52,31,0.12)]"
+      className="flex w-full max-w-4xl gap-5 max-sm:gap-3"
     >
-      <label className="text-sm font-medium text-stone-800" htmlFor="source-url">
-        YouTube 视频链接
-      </label>
-      <textarea
+      <input
         id="source-url"
+        type="url"
         value={url}
         onChange={(event) => setUrl(event.target.value)}
-        className="mt-3 min-h-28 w-full resize-none rounded-2xl border border-stone-200 bg-white/80 p-4 text-sm leading-6 text-stone-800 outline-none ring-stone-900/10 transition focus:ring-4"
-        placeholder="输入带字幕的 YouTube 链接"
+        disabled={isLoading}
+        className="h-14 min-w-0 flex-1 border-2 border-[#252336] bg-white px-4 font-mono text-xl leading-none text-[#252336] outline-none transition placeholder:text-[#8b8995] disabled:cursor-not-allowed disabled:border-[#d2d0da] disabled:bg-[#f6f6f8] disabled:text-[#777583] max-md:h-12 max-md:px-3 max-md:text-base"
+        placeholder="请输入 Youtube 视频链接"
       />
-      <div className="mt-4 grid gap-3">
-        <Button className="h-11 rounded-full" disabled={isLoading || url.trim().length === 0}>
-          {isLoading ? "生成中..." : "生成中文对话文章"}
+      {isLoading ? (
+        <Button
+          type="button"
+          className="h-14 w-14 shrink-0 max-md:h-12 max-md:w-12"
+          aria-label="终止生成"
+          onClick={handleStop}
+          onMouseDown={handleStop}
+        >
+          <span className="h-4 w-4 rounded-[2px] bg-current" />
         </Button>
-        <div className="grid grid-cols-2 gap-3">
-          <Button
-            type="button"
-            variant="outline"
-            className="rounded-full bg-white/60"
-            disabled={!isLoading}
-            onClick={onStop}
-          >
-            停止
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            className="rounded-full"
-            onClick={onReset}
-          >
-            重置
-          </Button>
-        </div>
-      </div>
-      <p className="mt-4 text-xs leading-5 text-stone-500">
-        当前版本使用本地 mock 字幕，链接字段保留用于后续接入字幕 API。
-      </p>
+      ) : (
+        <Button
+          className="h-14 w-28 shrink-0 text-base max-md:h-12 max-md:w-20 max-md:text-sm"
+          disabled={url.trim().length === 0}
+        >
+          提交
+        </Button>
+      )}
     </form>
   );
 }

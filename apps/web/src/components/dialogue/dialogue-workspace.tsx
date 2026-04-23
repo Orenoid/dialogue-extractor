@@ -1,55 +1,96 @@
 "use client";
 
 import { DialogueDocument } from "@/components/dialogue/dialogue-document";
-import { DialogueEmptyState } from "@/components/dialogue/dialogue-empty-state";
-import { DialogueStatusBadge } from "@/components/dialogue/dialogue-status";
 import { SourceForm } from "@/components/dialogue/source-form";
 import { useDialogue } from "@/hooks/use-dialogue";
+import type { DialogueStatus } from "@/types/dialogue";
+
+const statusCopy: Record<DialogueStatus, string> = {
+  idle: "",
+  submitting: "正在提交链接...",
+  awaitingTitle: "正在生成标题...",
+  streamingDialogue: "正在生成正文...",
+  completed: "生成完成",
+  error: "生成失败",
+  aborted: "已终止生成",
+};
 
 export function DialogueWorkspace() {
   const dialogue = useDialogue();
   const hasContent = Boolean(dialogue.title || dialogue.sections.length > 0);
+  const statusText = statusCopy[dialogue.status];
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_10%_0%,rgba(245,158,11,0.18),transparent_32%),radial-gradient(circle_at_90%_10%,rgba(15,118,110,0.13),transparent_28%),linear-gradient(180deg,#fff8e7_0%,#f5efe2_100%)] px-5 py-8 text-stone-950 md:px-8">
-      <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[360px_1fr]">
-        <aside className="space-y-5 lg:sticky lg:top-8 lg:self-start">
-          <div className="rounded-[1.75rem] border border-stone-200 bg-white/65 p-6 backdrop-blur">
-            <DialogueStatusBadge status={dialogue.status} />
-            <h1 className="mt-6 text-4xl font-semibold leading-none tracking-[-0.05em]">
-              访谈转中文对话文章
-            </h1>
-            <p className="mt-4 text-sm leading-7 text-stone-600">
-              输入视频来源，后端会基于字幕生成两层标题结构和流式对话正文。
-            </p>
+    <main className="min-h-screen bg-white px-4 py-14 text-[#252336] md:px-10 lg:px-24">
+      <div className="w-full">
+        <header>
+          <h1 className="font-mono text-2xl font-normal leading-none tracking-normal max-md:text-xl">
+            Dialogue Extractor
+          </h1>
+
+          <div className="mt-9 space-y-2.5">
+            <SourceForm
+              isLoading={dialogue.isLoading}
+              onSubmit={dialogue.submit}
+              onStop={dialogue.stop}
+            />
+
+            {statusText ? (
+              <p
+                className="flex min-h-5 items-center gap-2 text-sm text-[#686a73]"
+                aria-live="polite"
+              >
+                <StatusIcon status={dialogue.status} isLoading={dialogue.isLoading} />
+                <span>
+                  {dialogue.error
+                    ? `${statusText}: ${dialogue.error.message}`
+                    : statusText}
+                </span>
+              </p>
+            ) : null}
           </div>
 
-          <SourceForm
-            isLoading={dialogue.isLoading}
-            onSubmit={dialogue.submit}
-            onStop={dialogue.stop}
-            onReset={dialogue.reset}
-          />
-
-          {dialogue.error ? (
-            <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm leading-6 text-red-800">
-              {dialogue.error.message}
-            </div>
-          ) : null}
-        </aside>
-
-        <section>
           {hasContent ? (
-            <DialogueDocument
-              title={dialogue.title}
-              speakers={dialogue.speakers}
-              sections={dialogue.sections}
-            />
-          ) : (
-            <DialogueEmptyState />
-          )}
-        </section>
+            <h2 className="mt-8 max-w-5xl text-3xl font-semibold leading-tight tracking-normal text-[#252336] max-md:text-2xl">
+              {dialogue.title ?? "正在生成标题..."}
+            </h2>
+          ) : null}
+        </header>
+
+        {hasContent ? (
+          <DialogueDocument
+            speakers={dialogue.speakers}
+            sections={dialogue.sections}
+          />
+        ) : null}
       </div>
     </main>
   );
+}
+
+function StatusIcon({
+  status,
+  isLoading,
+}: {
+  status: DialogueStatus;
+  isLoading: boolean;
+}) {
+  if (isLoading) {
+    return (
+      <span
+        className="h-4 w-4 animate-spin rounded-full border-2 border-[#d6d4dc] border-t-[#252336]"
+        aria-hidden="true"
+      />
+    );
+  }
+
+  if (status === "completed") {
+    return <span aria-hidden="true">✓</span>;
+  }
+
+  if (status === "error" || status === "aborted") {
+    return <span aria-hidden="true">!</span>;
+  }
+
+  return null;
 }

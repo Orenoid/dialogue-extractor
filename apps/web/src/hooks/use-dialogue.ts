@@ -45,7 +45,15 @@ export function useDialogue(): UseDialogueResult {
       }
 
       for await (const part of readSseParts(response.body)) {
-        setState((current) => applyDialoguePart(current, part));
+        if (abortController.signal.aborted) {
+          break;
+        }
+
+        setState((current) =>
+          current.status === "aborted"
+            ? current
+            : applyDialoguePart(current, part),
+        );
       }
     } catch (error) {
       if (abortController.signal.aborted) {
@@ -58,11 +66,19 @@ export function useDialogue(): UseDialogueResult {
         status: "error",
         error: error instanceof Error ? error : new Error(String(error)),
       }));
+    } finally {
+      if (abortControllerRef.current === abortController) {
+        abortControllerRef.current = null;
+      }
     }
   }
 
   function stop() {
     abortControllerRef.current?.abort();
+    abortControllerRef.current = null;
+    setState((current) =>
+      isActiveStatus(current.status) ? { ...current, status: "aborted" } : current,
+    );
   }
 
   function reset() {
@@ -73,14 +89,19 @@ export function useDialogue(): UseDialogueResult {
 
   return {
     ...state,
-    isLoading:
-      state.status === "submitting" ||
-      state.status === "awaitingTitle" ||
-      state.status === "streamingDialogue",
+    isLoading: isActiveStatus(state.status),
     submit,
     stop,
     reset,
   };
+}
+
+function isActiveStatus(status: DialogueState["status"]) {
+  return (
+    status === "submitting" ||
+    status === "awaitingTitle" ||
+    status === "streamingDialogue"
+  );
 }
 
 export function applyDialoguePart(
