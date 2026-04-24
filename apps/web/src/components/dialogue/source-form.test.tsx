@@ -6,6 +6,19 @@ import { describe, expect, it, vi } from "vitest";
 import { SourceForm } from "./source-form";
 
 describe("SourceForm", () => {
+  it("renders the mock transcript note below the input", () => {
+    render(
+      <SourceForm isLoading={false} onSubmit={vi.fn()} onStop={() => undefined} />,
+    );
+
+    expect(
+      screen.getByText("由于部署后测试过程中触发了 Youtube 的风控，短时间内未能找到解决方案。"),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("link", { name: "该 Youtube 视频" }),
+    ).toHaveAttribute("href", "https://www.youtube.com/watch?v=xRh2sVcNXQ8");
+  });
+
   it("submits the trimmed youtube url", async () => {
     const user = userEvent.setup();
     const onSubmit = vi.fn().mockResolvedValue(undefined);
