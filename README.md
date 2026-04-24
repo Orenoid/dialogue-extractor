@@ -7,6 +7,10 @@
 > 由于部署到 cloudfare worker 多次测试后触发了 IP 风控，时间有限没办法搭代理解决。  
 > 所以临时在代码中将原先获取 youtube subtitle 的第三方库方案，改成了固定使用 [固定视频](https://www.youtube.com/watch?v=xRh2sVcNXQ8) 的字幕作为 mock 数据，除此之外的标题、正文等内容依然是通过 AI 接口实时生成的，非静态数据。
 
+## 截图
+![screenshot](.github/assets/screenshot.png)
+正在解析生成中的对话记录
+
 ## 架构设计
 
 项目是一个 `pnpm` workspace + `Turborepo` monorepo，主要分成两部分：
@@ -35,6 +39,8 @@ const {
 它的简洁性在于：请求发起、SSE 解析、增量状态合并和中断控制都封装在 hook 内部，UI 层只需要根据 `status`、`title`、`sections` 这些状态去做渲染逻辑即可，例如当后端完成标题提取/翻译时，title 就会自动从 null 变为 string，并映射到 UI 上。
 
 ## Workflow Graph
+
+> 工作流的大致流程结构
 
 ```text
 +-------------+
