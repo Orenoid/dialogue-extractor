@@ -30,6 +30,7 @@ export function SourceForm({ isLoading, onSubmit, onStop }: SourceFormProps) {
 
   function handleStop(event: MouseEvent<HTMLButtonElement>) {
     event.preventDefault();
+    event.stopPropagation();
     onStop();
   }
 
@@ -49,16 +50,18 @@ export function SourceForm({ isLoading, onSubmit, onStop }: SourceFormProps) {
       />
       {isLoading ? (
         <Button
+          key="stop"
           type="button"
           className="h-14 w-14 shrink-0 max-md:h-12 max-md:w-12"
           aria-label="终止生成"
           onClick={handleStop}
-          onMouseDown={handleStop}
         >
           <span className="h-4 w-4 rounded-[2px] bg-current" />
         </Button>
       ) : (
         <Button
+          key="submit"
+          type="submit"
           className="h-14 w-28 shrink-0 text-base max-md:h-12 max-md:w-20 max-md:text-sm"
           disabled={url.trim().length === 0}
         >
