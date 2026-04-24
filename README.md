@@ -2,14 +2,17 @@
 
 `podcast-note` 是一个面向长内容的对话笔记生成项目。
 
+## 在线 Demo
+[点击访问](https://podcast-note-web.dialoguelm.workers.dev/) （部署于 cloudfare worker，国内可能无法直接访问）
+> 由于部署到 cloudfare worker 多次测试后触发了 IP 风控，时间有限没办法搭代理解决。  
+> 所以临时在代码中将原先获取 youtube subtitle 的第三方库方案，改成了固定使用 [固定视频](https://www.youtube.com/watch?v=xRh2sVcNXQ8) 的字幕作为 mock 数据，除此之外的标题、正文等内容依然是通过 AI 接口实时生成的，非静态数据。
+
 ## 架构设计
 
 项目是一个 `pnpm` workspace + `Turborepo` monorepo，主要分成两部分：
 
 - `apps/web`: Next.js 前端，负责提交源内容、消费 SSE 流、维护生成状态并渲染 dialogue document。
 - `apps/api`: Cloudflare Workers 风格的后端，负责拉取源文本、调用模型、执行 dialogue workflow，并把内部事件转换成前端可消费的数据流。
-
-整体上，系统采用“后端工作流产生日志事件，前端按事件增量还原最终文档”的设计。这样可以避免等待整篇内容生成完成后再一次性返回，也让前端可以天然支持中断、重试和渐进展示。
 
 ## `useDialogue` Hook 设计
 
@@ -20,10 +23,10 @@ const {
   status,      // 当前生成状态
   title,       // 生成出的文章标题
   speakers,    // 识别出的说话人列表
-  sections,    // 当前已生成的 section/subsection/turn 树
+  sections,    // 当前已生成的正文部分（heading 结构、对话内容等）
   error,       // 失败时的错误对象
   isLoading,   // 是否仍在生成中
-  submit,      // 发起一次新的生成请求
+  submit,      // 提交视频
   stop,        // 中断当前生成
   reset,       // 清空本地状态
 } = useDialogue();
