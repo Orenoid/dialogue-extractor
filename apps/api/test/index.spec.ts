@@ -19,13 +19,11 @@ describe("podcast note worker", () => {
 		const response = await worker.fetch(request, env, ctx);
 		// Wait for all `Promise`s passed to `ctx.waitUntil()` to settle before running test assertions
 		await waitOnExecutionContext(ctx);
-		expect(await response.json()).toMatchInlineSnapshot(`
-			{
-			  "hasOpenAIKey": false,
-			  "ok": true,
-			  "runtime": "cloudflare-worker",
-			}
-		`);
+		expect(await response.json()).toEqual({
+			ok: true,
+			runtime: "cloudflare-worker",
+			hasOpenAIKey: Boolean(env.OPENAI_API_KEY),
+		});
 	});
 
 	it("returns note scaffold metadata (integration style)", async () => {

@@ -105,3 +105,14 @@ const {
 ```
 
 后端采用 workflow + agent 节点的设计，通过一个稳定的工作流，并行+串行相结合，使用 agent 提取结构化信息，最终聚合转换为 sse event 推送给前端
+
+## 输入源抽象层
+
+虽然目前只支持了 Youtube 视频，但在输入源上做了一层抽象，未来还可以接入 bilibili、纯文本文章等其他输入源
+
+```ts
+export interface SourceFetcher {
+	metadata(): Record<string, unknown>;
+	transcript(): string;
+}
+```

@@ -1,6 +1,28 @@
-export const MOCK_YOUTUBE_SOURCE_TITLE = "Marc Andreessen's 2026 Outlook: AI Timelines, US vs. China, and The Price";
+import type { DialogueSource } from "../../types";
+import type { SourceFetcher } from "./source-fetcher";
 
-export const MOCK_YOUTUBE_TRANSCRIPT = String.raw`this new wave of AI companies is is
+type YoutubeSource = Extract<DialogueSource, { kind: "youtube" }>;
+
+export class YoutubeSourceFetcher implements SourceFetcher {
+	constructor(private readonly source: YoutubeSource) {}
+
+	metadata(): Record<string, unknown> {
+		return {
+			sourceTitle: MOCK_YOUTUBE_SOURCE_TITLE,
+			language: "en",
+			url: this.source.url,
+		};
+	}
+
+	transcript(): string {
+		return MOCK_YOUTUBE_TRANSCRIPT;
+	}
+}
+
+const MOCK_YOUTUBE_SOURCE_TITLE =
+	"Marc Andreessen's 2026 Outlook: AI Timelines, US vs. China, and The Price";
+
+const MOCK_YOUTUBE_TRANSCRIPT = String.raw`this new wave of AI companies is is
 growing revenue like just like actual
 customer revenue, actual demand
 translated through to dollars showing up
