@@ -15,6 +15,7 @@ export function DialogueDocument({
 
   return (
     <div className="mt-7 grid max-w-[1760px] gap-12 lg:grid-cols-[360px_minmax(0,1fr)]">
+      {/* vertical navigation */}
       <nav className="self-start lg:sticky lg:top-8">
         <ol className="space-y-3 text-lg leading-[1.65] text-[#686a73]">
           {sections.map((section) => (
@@ -43,7 +44,7 @@ export function DialogueDocument({
           ))}
         </ol>
       </nav>
-
+      {/* main content */}
       <article className="max-w-[1280px] text-[#252336]">
         <div className="space-y-10">
           {sections.map((section) => (
