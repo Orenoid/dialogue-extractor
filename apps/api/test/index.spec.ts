@@ -26,6 +26,23 @@ describe("podcast note worker", () => {
 		});
 	});
 
+	it("handles CORS preflight for dialogue requests", async () => {
+		const request = new IncomingRequest("http://example.com/api/dialogue", {
+			method: "OPTIONS",
+			headers: {
+				origin: "https://example.com",
+				"access-control-request-method": "POST",
+			},
+		});
+		const ctx = createExecutionContext();
+		const response = await worker.fetch(request, env, ctx);
+		await waitOnExecutionContext(ctx);
+
+		expect(response.status).toBe(204);
+		expect(response.headers.get("access-control-allow-origin")).toBe("*");
+		expect(response.headers.get("access-control-allow-methods")).toContain("POST");
+	});
+
 	it("returns note scaffold metadata (integration style)", async () => {
 		const response = await SELF.fetch("https://example.com/api/notes");
 		expect(await response.json()).toMatchInlineSnapshot(`

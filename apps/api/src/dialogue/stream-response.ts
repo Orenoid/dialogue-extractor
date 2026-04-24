@@ -75,9 +75,6 @@ export function createDialogueStreamResponse(
 			"content-type": "text/event-stream; charset=utf-8",
 			"cache-control": "no-cache, no-transform",
 			connection: "keep-alive",
-			"access-control-allow-origin": "*",
-			"access-control-allow-headers": "content-type",
-			"access-control-allow-methods": "POST, OPTIONS",
 		},
 	});
 }
