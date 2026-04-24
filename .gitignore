@@ -3,6 +3,8 @@ node_modules
 .turbo
 
 apps/web/.next
+apps/web/.open-next
+apps/web/.wrangler
 apps/web/storybook-static
 apps/web/coverage
 
