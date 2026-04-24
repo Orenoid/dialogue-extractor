@@ -37,7 +37,7 @@ async function runDialogueWorkflowTasks(
 	deps: DialogueWorkflowDeps,
 	emit: (event: GraphEvent) => void,
 ): Promise<void> {
-	const transcript = await fetchSource(input.source);
+	const transcript = await fetchSource(input.source, deps.transcriptAccess);
 	emit({ type: "status.changed", status: "awaitingTitle" });
 
 	const titleTask = captureTask(

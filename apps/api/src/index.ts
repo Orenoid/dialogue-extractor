@@ -42,6 +42,9 @@ export default {
 				runDialogueWorkflow(input, {
 					model,
 					maxSectionRetries: 2,
+					transcriptAccess: {
+						youtubeCookie: env.YOUTUBE_COOKIE,
+					},
 				}),
 			);
 		}

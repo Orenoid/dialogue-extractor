@@ -158,4 +158,7 @@ export interface DialogueWorkflowInput {
 export interface DialogueWorkflowDeps {
 	model: DialogueModel;
 	maxSectionRetries?: number;
+	transcriptAccess?: {
+		youtubeCookie?: string;
+	};
 }
